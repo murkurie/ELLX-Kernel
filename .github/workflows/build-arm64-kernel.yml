@@ -141,6 +141,16 @@ jobs:
       - name: Prepare packaging environment
         working-directory: kernel
         run: |
+          # Map gcc-15 references to system GCC on Ubuntu 24.04
+          for tool in gcc g++ cpp gcov; do
+            if which $tool >/dev/null 2>&1; then
+              sudo ln -sf $(which $tool) /usr/bin/aarch64-linux-gnu-${tool}-15
+              sudo ln -sf $(which $tool) /usr/bin/${tool}-15
+            fi
+          done
+          aarch64-linux-gnu-gcc-15 --version
+
+          sed -i 's/gcc:=gcc-15/gcc:=gcc/' debian/rules.d/0-common-vars.mk || true
           chmod +x debian/rules
           fakeroot ./debian/rules clean
 

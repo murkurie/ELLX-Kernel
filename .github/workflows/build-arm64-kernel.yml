@@ -138,21 +138,17 @@ jobs:
           done < "${PATCH_DIR}/series"
           echo "All patches applied successfully."
 
-      - name: Prepare Ubuntu packaging metadata and config
+      - name: Prepare packaging environment
         working-directory: kernel
         run: |
-          export DEB_BUILD_OPTIONS="parallel=$(nproc)"
           chmod +x debian/rules
           fakeroot ./debian/rules clean
-          ./debian/rules updateconfigs
-          git add debian.qcom-x1e/config/annotations debian.qcom-x1e/config/arm64/*.config || true
-          git commit -m "debian.qcom-x1e: sync annotations with updateconfigs for 7.2" || true
 
       - name: Compile and package Linux qcom-x1e (.deb)
         working-directory: kernel
         run: |
           export DEB_BUILD_OPTIONS="parallel=$(nproc)"
-          fakeroot ./debian/rules binary-qcom-x1e
+          fakeroot ./debian/rules binary-headers binary-qcom-x1e do_skip_checks=true
 
       - name: Inspect generated Debian packages
         run: |

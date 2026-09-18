@@ -1,0 +1,122 @@
+From: scuggo <scuggo@users.noreply.github.com>
+Subject: [PATCH 4/8] dmaengine: qcom: gpi: Add support for QSPI protocol 9
+
+Surface Laptop 7 haptic touchpad communicates over QSPI using
+Qualcomm GPI DMA engine protocol 9 (SPI_TX_RX full-duplex opcode/addr
+tx with payload rx).
+
+Signed-off-by: scuggo <scuggo@users.noreply.github.com>
+---
+ drivers/dma/qcom/gpi.c            | 133 +++++++++++++++++++++++++++++-
+ include/dt-bindings/dma/qcom-gpi.h |   1 +
+ include/linux/dma/qcom-gpi-dma.h   |   6 ++
+ 3 files changed, 137 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/dma/qcom/gpi.c b/drivers/dma/qcom/gpi.c
+index e3413cf2..04ef9a58 100644
+--- a/drivers/dma/qcom/gpi.c
++++ b/drivers/dma/qcom/gpi.c
+@@ -62,6 +62,14 @@
+ #define GPI_SPI_GO_CMD			0x2
+ #define GPI_SPI_CONFIG0_CMD		0x10
+ 
++/* QSPI command / flags */
++#define GPI_QSPI_GO_CMD			0x2
++#define GPI_QSPI_CONFIG0_CMD		0x10
++#define GPI_QSPI_CONFIG1_CMD		0x11
++#define GPI_QSPI_CONFIG2_CMD		0x12
++#define GPI_QSPI_CONFIG3_CMD		0x13
++#define GPI_QSPI_PROTOCOL		9
++
+ /* I2C command */
+ #define GPI_I2C_GO_CMD			0x1
+ 
+@@ -296,6 +304,9 @@ struct gpi_desc {
+ 	void *wp;
+ 	struct list_head node;
+ 	struct gpi_ring *ring;
++	bool qspi_mode;
++	u8 dummy_clk_cnt;
++	u16 tx_cmd_len;
+ };
+ 
+ struct gpi_dev {
+@@ -936,6 +947,126 @@ static int gpi_config_spi(struct gpi_ring *ring, struct gpi_spi_config *cfg)
+ 	return 0;
+ }
+ 
++static int gpi_config_qspi(struct gpi_ring *ring, struct gpi_spi_config *cfg)
++{
++	struct gpi_tre *tre = ring->wp;
++
++	memset(tre, 0, sizeof(*tre));
++	tre->dword[0] = cfg->clk_src;
++	tre->dword[1] = cfg->clk_div;
++	tre->dword[2] = 0;
++	tre->dword[3] = FIELD_PREP(GPI_TRE_MAJOR_VER, 1) |
++			FIELD_PREP(GPI_TRE_MINOR_VER, 0) |
++			FIELD_PREP(GPI_TRE_TYPE, GPI_TRE_TYPE_CONFIG) |
++			FIELD_PREP(GPI_TRE_BEI, 0) |
++			FIELD_PREP(GPI_TRE_LINK, 0) |
++			FIELD_PREP(GPI_TRE_IEOT, 0) |
++			FIELD_PREP(GPI_TRE_CHAIN, 1);
++	ring->wp++;
++	if (ring->wp == ring->end)
++		ring->wp = ring->base;
++
++	tre = ring->wp;
++	memset(tre, 0, sizeof(*tre));
++	tre->dword[0] = cfg->qspi_lane_flags;
++	tre->dword[1] = cfg->dummy_clk_cnt;
++	tre->dword[2] = cfg->tx_cmd_len;
++	tre->dword[3] = FIELD_PREP(GPI_TRE_MAJOR_VER, 1) |
++			FIELD_PREP(GPI_TRE_MINOR_VER, 0) |
++			FIELD_PREP(GPI_TRE_TYPE, GPI_QSPI_CONFIG1_CMD) |
++			FIELD_PREP(GPI_TRE_BEI, 0) |
++			FIELD_PREP(GPI_TRE_LINK, 0) |
++			FIELD_PREP(GPI_TRE_IEOT, 0) |
++			FIELD_PREP(GPI_TRE_CHAIN, 1);
++	ring->wp++;
++	if (ring->wp == ring->end)
++		ring->wp = ring->base;
++
++	return 0;
++}
++
+diff --git a/include/dt-bindings/dma/qcom-gpi.h b/include/dt-bindings/dma/qcom-gpi.h
+index ebda2a37..373ef65f 100644
+--- a/include/dt-bindings/dma/qcom-gpi.h
++++ b/include/dt-bindings/dma/qcom-gpi.h
+@@ -7,5 +7,6 @@
+ #define QCOM_GPI_SPI		1
+ #define QCOM_GPI_UART		2
+ #define QCOM_GPI_I2C		3
++#define QCOM_GPI_QSPI		4
+ 
+ #endif /* __DT_BINDINGS_DMA_QCOM_GPI_H__ */
+diff --git a/include/linux/dma/qcom-gpi-dma.h b/include/linux/dma/qcom-gpi-dma.h
+index 6680dd1a..4bbd5018 100644
+--- a/include/linux/dma/qcom-gpi-dma.h
++++ b/include/linux/dma/qcom-gpi-dma.h
+@@ -13,6 +13,7 @@ enum spi_transfer_cmd {
+ 	SPI_TX = 1,
+ 	SPI_RX,
+ 	SPI_DUPLEX,
++	SPI_TX_RX = 7,	/* QSPI full-duplex (TX opcode+addr, RX data) */
+ };
+ 
+ /**
+@@ -44,6 +45,11 @@ struct gpi_spi_config {
+ 	u32 clk_src;
+ 	enum spi_transfer_cmd cmd;
+ 	u32 rx_len;
++	/* QSPI extensions */
++	bool qspi_mode;
++	u16 qspi_lane_flags;
++	u8 dummy_clk_cnt;
++	u16 tx_cmd_len;
+ };
+ 
+ enum i2c_op {
+-- 
+2.45.0

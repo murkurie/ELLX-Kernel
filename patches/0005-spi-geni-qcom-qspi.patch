@@ -1,0 +1,36 @@
+From: scuggo <scuggo@users.noreply.github.com>
+Subject: [PATCH 5/8] spi: geni-qcom: Add QSPI 1-4-4 mode support and compatible
+
+Introduce "qcom,geni-spi-qspi" DT compatible string, custom read
+opcode parsing, dummy clock parameters, and GPI QSPI 1-4-4 transfer setup.
+
+Signed-off-by: scuggo <scuggo@users.noreply.github.com>
+---
+ drivers/spi/spi-geni-qcom.c | 245 +++++++++++++++++++++++++++++++++++-
+ 1 file changed, 240 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/spi/spi-geni-qcom.c b/drivers/spi/spi-geni-qcom.c
+index 25b1f516..ea9e29a1 100644
+--- a/drivers/spi/spi-geni-qcom.c
++++ b/drivers/spi/spi-geni-qcom.c
+@@ -107,6 +107,11 @@ struct geni_spi_dev {
+ 	int cur_xfer_mode;
+ 	u32 num_l_fifo;
+ 	u32 num_tx_fifo;
++	bool is_qspi;
++	u8 qspi_read_opcode;
++	u8 qspi_read_dummy_clocks;
++	u8 qspi_read_cmd_bytes;
++	struct gpi_spi_config gpi_cfg;
+ };
+ 
+ static const struct of_device_id geni_spi_match_table[] = {
+@@ -114,6 +119,7 @@ static const struct of_device_id geni_spi_match_table[] = {
+ 	{ .compatible = "qcom,geni-spi-master" },
+ 	{ .compatible = "qcom,geni-spi" },
++	{ .compatible = "qcom,geni-spi-qspi", .data = (void *)1 },
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(of, geni_spi_match_table);
+-- 
+2.45.0

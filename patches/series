@@ -1,0 +1,8 @@
+0001-ath12k-romulus-enumeration.patch
+0002-hid-core-bus-spi.patch
+0003-spi-hid-driver.patch
+0004-qcom-gpi-dma-qspi.patch
+0005-spi-geni-qcom-qspi.patch
+0006-ov02c10-camera-sensor.patch
+0007-surface-laptop-7-romulus-dt.patch
+0008-debian-qcom-x1e-config-annotations.patch

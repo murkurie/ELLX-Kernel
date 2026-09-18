@@ -1,0 +1,274 @@
+From: ProgrammerIn-wonderland <alice@alicesworld.tech>
+Subject: [PATCH 7/8] arm64: dts: qcom: romulus: Add Surface Laptop 7 touchpad, regulators, and camera
+
+Add Surface Laptop 7 (Romulus) hardware bindings:
+- vreg_ts_5p0 trackpad regulator and pin controls
+- PM8010 RPMh regulators for camera subsystem
+- OV02C10 camera sensor on cci1_i2c1 and csiphy4
+- spi19 touchpad@0 (hid-over-spi) via GPI DMA2
+
+Signed-off-by: ProgrammerIn-wonderland <alice@alicesworld.tech>
+Signed-off-by: scuggo <scuggo@users.noreply.github.com>
+---
+diff --git a/arch/arm64/boot/dts/qcom/x1e80100-microsoft-romulus.dtsi b/arch/arm64/boot/dts/qcom/x1e80100-microsoft-romulus.dtsi
+index 00000000..ae9da9e3 100644
+--- a/arch/arm64/boot/dts/qcom/x1e80100-microsoft-romulus.dtsi
++++ b/arch/arm64/boot/dts/qcom/x1e80100-microsoft-romulus.dtsi
+@@ -505,6 +505,15 @@
+ 			};
+ 		};
+ 	};
++	vreg_ts_5p0: ts-5p0-regulator {
++		compatible = "regulator-fixed";
++		regulator-name = "vreg_ts_5p0";
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++		gpio = <&tlmm 65 0>;
++		enable-active-high;
++		startup-delay-us = <100000>;
++	};
+ };
+ 
+ &apps_rsc {
+@@ -857,6 +866,57 @@
+ 			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
+ 		};
+ 	};
++
++	regulators-8 {
++		compatible = "qcom,pm8010-rpmh-regulators";
++		qcom,pmic-id = "m";
++
++		vdd-l1-l2-supply = <&vreg_s5j>;
++		vdd-l3-l4-supply = <&vreg_s4c>;
++		vdd-l7-supply = <&vreg_bob1>;
++
++		vreg_l1m_1p2: ldo1 {
++			regulator-name = "vreg_l1m_1p2";
++			regulator-min-microvolt = <1200000>;
++			regulator-max-microvolt = <1260000>;
++			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
++		};
++
++		vreg_l2m_1p2: ldo2 {
++			regulator-name = "vreg_l2m_1p2";
++			regulator-min-microvolt = <1200000>;
++			regulator-max-microvolt = <1260000>;
++			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
++		};
++
++		vreg_l3m_1p8: ldo3 {
++			regulator-name = "vreg_l3m_1p8";
++			regulator-min-microvolt = <1800000>;
++			regulator-max-microvolt = <1900000>;
++			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
++		};
++
++		vreg_l4m_1p8: ldo4 {
++			regulator-name = "vreg_l4m_1p8";
++			regulator-min-microvolt = <1800000>;
++			regulator-max-microvolt = <1900000>;
++			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
++		};
++
++		vreg_l5m_2p8: ldo5 {
++			regulator-name = "vreg_l5m_2p8";
++			regulator-min-microvolt = <2800000>;
++			regulator-max-microvolt = <3072000>;
++			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
++		};
++
++		vreg_l7m_2p8: ldo7 {
++			regulator-name = "vreg_l7m_2p8";
++			regulator-min-microvolt = <2800000>;
++			regulator-max-microvolt = <3072000>;
++			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
++		};
++	};
+ };
+ 
+ &gpu {
+@@ -868,6 +928,66 @@
+ 	firmware-name = "qcom/x1e80100/microsoft/qcdxkmsuc8380.mbn";
+ };
+ 
++&camss {
++	status = "okay";
++
++	ports {
++		/*
++		 * port0 => csiphy0
++		 * port1 => csiphy1
++		 * port2 => csiphy2
++		 * port3 => csiphy4
++		 */
++		port@3 {
++			camss_csiphy4_inep0: endpoint@0 {
++				clock-lanes = <7>;
++				data-lanes = <0 1>;
++				remote-endpoint = <&ov02c10_ep>;
++			};
++		};
++	};
++};
++
++&cci1 {
++	status = "okay";
++};
++
++&cci1_i2c1 {
++	camera@36 {
++		compatible = "ovti,ov02c10";
++		reg = <0x36>;
++
++		reset-gpios = <&tlmm 237 GPIO_ACTIVE_LOW>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&cam_rgb_default>;
++
++		clocks = <&camcc CAM_CC_MCLK4_CLK>;
++		assigned-clocks = <&camcc CAM_CC_MCLK4_CLK>;
++		assigned-clock-rates = <19200000>;
++
++		orientation = <0>; /* front facing */
++
++		avdd-supply = <&vreg_l5m_2p8>;
++		dvdd-supply = <&vreg_l1m_1p2>;
++		dovdd-supply = <&vreg_l3m_1p8>;
++
++		port {
++			ov02c10_ep: endpoint {
++				data-lanes = <1 2>;
++				link-frequencies = /bits/ 64 <400000000>;
++				remote-endpoint = <&camss_csiphy4_inep0>;
++			};
++		};
++	};
++};
++
++&csiphy4 {
++	vdda-0p8-supply = <&vreg_l2c>;
++	vdda-1p2-supply = <&vreg_l1c>;
++
++	status = "okay";
++};
++
+ &i2c0 {
+ 	clock-frequency = <100000>;
+ 
+@@ -1442,12 +1562,73 @@
+ 		bias-disable;
+ 	};
+ 
++	cam_rgb_default: cam-rgb-default-state {
++		mclk-pins {
++			pins = "gpio100";
++			function = "cam_aon";
++			drive-strength = <16>;
++			bias-disable;
++		};
++
++		reset-n-pins {
++			pins = "gpio237";
++			function = "gpio";
++			drive-strength = <2>;
++			bias-disable;
++		};
++	};
++
+ 	cam_indicator_en: cam-indicator-en-state {
+ 		pins = "gpio225";
+ 		function = "gpio";
+ 		drive-strength = <2>;
+ 		bias-disable;
+ 	};
++
++	qup_qspi19_data_clk: qup-qspi19-data-clk-state {
++		pins = "gpio76", "gpio77", "gpio78";
++		function = "qup2_se3";
++		drive-strength = <6>;
++		bias-disable;
++	};
++
++	qup_qspi19_cs: qup-qspi19-cs-state {
++		pins = "gpio79";
++		function = "qup2_se3";
++		drive-strength = <6>;
++		bias-disable;
++	};
++
++	qup_qspi19_data23: qup-qspi19-data23-state {
++		pins = "gpio66", "gpio67";
++		function = "qup2_se3";
++		drive-strength = <6>;
++		bias-disable;
++	};
++
++	spi19_hid0_reset_deassert: spi19-hid0-reset-deassert-state {
++		pins = "gpio65", "gpio120";
++		function = "gpio";
++		drive-strength = <16>;
++		bias-disable;
++		output-high;
++	};
++
++	spi19_hid0_reset_assert: spi19-hid0-reset-assert-state {
++		pins = "gpio65", "gpio120";
++		function = "gpio";
++		drive-strength = <16>;
++		bias-disable;
++		output-low;
++	};
++
++	spi19_hid0_int_bias: spi19-hid0-int-bias-state {
++		pins = "gpio3";
++		function = "gpio";
++		input-enable;
++		bias-pull-up;
++	};
++
+ };
+ 
+ &uart2 {
+@@ -1582,3 +1763,40 @@
+ 
+ 	status = "okay";
+ };
++
++&gpi_dma2 {
++	status = "okay";
++};
++
++&spi19 {
++	status = "okay";
++	compatible = "qcom,geni-spi-qspi";
++	spi-max-frequency = <20000000>;
++	qcom,qspi-read-opcode = <0xEB>;
++	qcom,qspi-read-dummy-clocks = <8>;
++	qcom,qspi-read-cmd-bytes = <4>;
++
++	pinctrl-0 = <&qup_qspi19_data_clk>, <&qup_qspi19_cs>,
++	<&qup_qspi19_data23>,
++	<&spi19_hid0_int_bias>;
++	pinctrl-names = "default";
++
++	dmas = <&gpi_dma2 0 3 QCOM_GPI_QSPI>,
++	<&gpi_dma2 1 3 QCOM_GPI_QSPI>;
++	dma-names = "tx", "rx";
++
++	touchpad: touchpad@0 {
++		compatible = "hid-over-spi";
++		reg = <0>;
++		spi-max-frequency = <20000000>;
++
++		interrupt-parent = <&tlmm>;
++		interrupts = <3 IRQ_TYPE_LEVEL_LOW>;
++
++		vdd-supply = <&vreg_ts_5p0>;
++
++		pinctrl-0 = <&spi19_hid0_reset_deassert>;
++		pinctrl-1 = <&spi19_hid0_reset_assert>;
++		pinctrl-names = "active", "reset";
++	};
++};
+-- 
+2.45.0

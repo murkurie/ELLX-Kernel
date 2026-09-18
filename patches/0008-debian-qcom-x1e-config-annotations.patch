@@ -1,0 +1,24 @@
+From: ProgrammerIn-wonderland <alice@alicesworld.tech>
+Subject: [PATCH 8/8] debian.qcom-x1e: Enable CONFIG_SPI_HID module in annotations
+
+Enable CONFIG_SPI_HID as module in Ubuntu packaging annotations for arm64.
+
+Signed-off-by: ProgrammerIn-wonderland <alice@alicesworld.tech>
+---
+ debian.qcom-x1e/config/annotations | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/debian.qcom-x1e/config/annotations b/debian.qcom-x1e/config/annotations
+index 6ab1a7a1..e84a2cb5 100644
+--- a/debian.qcom-x1e/config/annotations
++++ b/debian.qcom-x1e/config/annotations
+@@ -10715,6 +10715,7 @@ CONFIG_SPI_FSL_QUADSPI                          policy<{'arm64': 'm'}>
+ CONFIG_SPI_GENI_QCOM                            policy<{'arm64': 'm'}>
+ CONFIG_SPI_GPIO                                 policy<{'arm64': 'm'}>
+ CONFIG_SPI_HID                                  policy<{'arm64': 'm'}>
++CONFIG_SPI_HID_OF                               policy<{'arm64': 'y'}>
+ CONFIG_SPI_HISI_KUNPENG                         policy<{'arm64': 'm'}>
+ CONFIG_SPI_HISI_SFC_V3XX                        policy<{'arm64': 'm'}>
+ CONFIG_SPI_INTEL_PCI                            policy<{'arm64': 'm'}>
+-- 
+2.45.0

@@ -6,14 +6,13 @@ to support Surface Laptop 7 RGB camera sensor readout.
 
 Signed-off-by: ProgrammerIn-wonderland <alice@alicesworld.tech>
 ---
- drivers/media/i2c/ov02c10.c | 59 +++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 55 insertions(+), 4 deletions(-)
-
+ drivers/media/i2c/ov02c10.c | 50 ++++++++++++++++++++++++++++++-------
+ 1 file changed, 41 insertions(+), 9 deletions(-)
 diff --git a/drivers/media/i2c/ov02c10.c b/drivers/media/i2c/ov02c10.c
-index e11a4f02..7ceee3c8 100644
+index e8011c8..bcee1b0 100644
 --- a/drivers/media/i2c/ov02c10.c
 +++ b/drivers/media/i2c/ov02c10.c
-@@ -59,6 +59,27 @@
+@@ -60,6 +60,26 @@
  #define OV02C10_REG_TEST_PATTERN		CCI_REG8(0x4503)
  #define OV02C10_TEST_PATTERN_ENABLE		BIT(7)
  
@@ -25,91 +24,88 @@ index e11a4f02..7ceee3c8 100644
 +#define OV02C10_NATIVE_HEIGHT          1096
 +
 +static const struct v4l2_rect ov02c10_native_area = {
-+       .left = 0,
-+       .top = 0,
-+       .width = OV02C10_NATIVE_WIDTH,
-+       .height = OV02C10_NATIVE_HEIGHT,
++	.left = 0,
++	.top = 0,
++	.width = OV02C10_NATIVE_WIDTH,
++	.height = OV02C10_NATIVE_HEIGHT,
 +};
 +
 +static const struct v4l2_rect ov02c10_active_area = {
-+       .left = 4,
-+       .top = 2,
-+       .width = 1928,
-+       .height = 1092,
++	.left = 4,
++	.top = 2,
++	.width = 1928,
++	.height = 1092,
 +};
-+
  struct ov02c10_mode {
  	/* Frame width in pixels */
  	u32 width;
-@@ -706,10 +727,13 @@ static int ov02c10_set_format(struct v4l2_subdev *sd,
- {
- 	const struct ov02c10_mode *mode = &supported_modes[0];
+@@ -710,8 +730,12 @@ static int ov02c10_set_format(struct v4l2_subdev *sd,
  	struct ov02c10 *ov02c10 = to_ov02c10(sd);
-+       struct v4l2_rect *crop;
  	s32 vblank_def, h_blank;
  
++	struct v4l2_rect *crop;
++
  	ov02c10_update_pad_format(mode, &fmt->format);
  	*v4l2_subdev_state_get_format(sd_state, fmt->pad) = fmt->format;
-+       crop = v4l2_subdev_state_get_crop(sd_state, fmt->pad);
-+       *crop = ov02c10_active_area;
++	crop = v4l2_subdev_state_get_crop(sd_state, fmt->pad);
++	*crop = ov02c10_active_area;
  
  	if (fmt->which == V4L2_SUBDEV_FORMAT_TRY)
  		return 0;
-@@ -725,6 +749,26 @@ static int ov02c10_set_format(struct v4l2_subdev *sd,
- 	return 0;
- }
+@@ -761,29 +785,19 @@ static int ov02c10_get_selection(struct v4l2_subdev *sd,
+ 				 struct v4l2_subdev_state *sd_state,
+ 				 struct v4l2_subdev_selection *sel)
+ {
+-	struct v4l2_rect bounds = {
+-		.left = 0,
+-		.top = 0,
+-		.width = supported_modes[0].width,
+-		.height = supported_modes[0].height,
+-	};
+-	struct v4l2_rect crop = {
+-		.left = 0,
+-		.top = 0,
+-		.width = supported_modes[0].width,
+-		.height = supported_modes[0].height,
+-	};
+-
+ 	if (sel->pad != 0)
+ 		return -EINVAL;
  
-+static int ov02c10_get_selection(struct v4l2_subdev *sd,
-+                                struct v4l2_subdev_state *sd_state,
-+                                struct v4l2_subdev_selection *sel)
-+{
-+       switch (sel->target) {
-+       case V4L2_SEL_TGT_CROP:
-+               sel->r = *v4l2_subdev_state_get_crop(sd_state, sel->pad);
-+               return 0;
-+       case V4L2_SEL_TGT_CROP_DEFAULT:
-+               sel->r = ov02c10_active_area;
-+               return 0;
-+       case V4L2_SEL_TGT_CROP_BOUNDS:
-+       case V4L2_SEL_TGT_NATIVE_SIZE:
-+               sel->r = ov02c10_native_area;
-+               return 0;
-+       default:
-+               return -EINVAL;
-+       }
-+}
-+
- static int ov02c10_enum_mbus_code(struct v4l2_subdev *sd,
- 				  struct v4l2_subdev_state *sd_state,
- 				  struct v4l2_subdev_mbus_code_enum *code)
-@@ -758,10 +802,16 @@ static int ov02c10_enum_frame_size(struct v4l2_subdev *sd,
+ 	switch (sel->target) {
+ 	case V4L2_SEL_TGT_CROP:
++		sel->r = *v4l2_subdev_state_get_crop(sd_state, sel->pad);
++		return 0;
+ 	case V4L2_SEL_TGT_CROP_DEFAULT:
+-		sel->r = crop;
++		sel->r = ov02c10_active_area;
+ 		return 0;
+ 	case V4L2_SEL_TGT_CROP_BOUNDS:
+-		sel->r = bounds;
++	case V4L2_SEL_TGT_NATIVE_SIZE:
++		sel->r = ov02c10_native_area;
+ 		return 0;
+ 	default:
+ 		return -EINVAL;
+@@ -793,10 +807,16 @@ static int ov02c10_get_selection(struct v4l2_subdev *sd,
  static int ov02c10_init_state(struct v4l2_subdev *sd,
  			      struct v4l2_subdev_state *sd_state)
  {
 -	ov02c10_update_pad_format(&supported_modes[0],
 -				  v4l2_subdev_state_get_format(sd_state, 0));
--
++	struct v4l2_subdev_format fmt = {
++		.which = V4L2_SUBDEV_FORMAT_TRY,
++		.format = {
++			.code = MEDIA_BUS_FMT_SGRBG10_1X10,
++			.width = supported_modes[0].width,
++			.height = supported_modes[0].height,
++		},
++	};
+ 
 -	return 0;
-+       struct v4l2_subdev_format fmt = {
-+               .which = V4L2_SUBDEV_FORMAT_TRY,
-+               .format = {
-+                       .code = MEDIA_BUS_FMT_SGRBG10_1X10,
-+                       .width = supported_modes[0].width,
-+                       .height = supported_modes[0].height,
-+               },
-+       };
-+
-+       return ov02c10_set_format(sd, sd_state, &fmt);
++	return ov02c10_set_format(sd, sd_state, &fmt);
  }
  
- static const struct v4l2_subdev_video_ops ov02c10_video_ops = {
-@@ -771,6 +821,7 @@ static const struct v4l2_subdev_video_ops ov02c10_video_ops = {
- static const struct v4l2_subdev_pad_ops ov02c10_pad_ops = {
- 	.set_fmt = ov02c10_set_format,
- 	.get_fmt = v4l2_subdev_get_fmt,
-+       .get_selection = ov02c10_get_selection,
- 	.enum_mbus_code = ov02c10_enum_mbus_code,
- 	.enum_frame_size = ov02c10_enum_frame_size,
- 	.enable_streams = ov02c10_enable_streams,
+ #ifdef CONFIG_VIDEO_ADV_DEBUG
 -- 
 2.45.0

@@ -1,45 +1,13 @@
 From: Jarrett Schultz <jaschultz@microsoft.com>
-Subject: [PATCH 2/8] HID: Add BUS_SPI support and define HID_SPI_DEVICE macro
+Subject: [PATCH 2/8] HID: define HID_SPI_DEVICE macro
 
-Add BUS_SPI (0x1F) identifier to HID bus types, export HID_SPI_DEVICE
-macro for device matching, and update transport documentation.
+Define HID_SPI_DEVICE macro for SPI HID device matching.
 
 Signed-off-by: Jarrett Schultz <jaschultz@microsoft.com>
 ---
- Documentation/hid/hid-transport.rst | 4 ++--
- drivers/hid/hid-core.c              | 3 +++
- include/linux/hid.h                 | 2 ++
- 3 files changed, 7 insertions(+), 2 deletions(-)
+ include/linux/hid.h | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/Documentation/hid/hid-transport.rst b/Documentation/hid/hid-transport.rst
-index ca14f481..cf16c7cf 100644
---- a/Documentation/hid/hid-transport.rst
-+++ b/Documentation/hid/hid-transport.rst
-@@ -318,8 +318,8 @@ Data-path only callbacks are:
-      synchronously.
- 
-    - ``output_report``: Called by HID core when an output report needs to be
--     sent to the device. The transport driver must not sleep. Not all transports
--     support this callback.
-+     sent to the device. The transport driver may sleep. Not all transports
-+     support this callback.
- 
- 2.3) Operations:
- ----------------
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index a4cfbf3c..6c01e389 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -274,6 +274,9 @@ static struct hid_report *hid_register_report(struct hid_device *device,
- 	struct hid_report_enum *report_enum = device->report_enum +type;
- 	struct hid_report *report;
- 
-+	if (device->bus == BUS_SPI)
-+		return hid_register_report_spi(device, type, id, application);
-+
- 	if (id >= HID_MAX_IDS)
- 		return NULL;
- 	if (report_enum->report_id_hash[id])
 diff --git a/include/linux/hid.h b/include/linux/hid.h
 index b75cfa79..a64cebb7 100644
 --- a/include/linux/hid.h

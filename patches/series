@@ -6,3 +6,4 @@
 0006-ov02c10-camera-sensor.patch
 0007-surface-laptop-7-romulus-dt.patch
 0008-debian-qcom-x1e-config-annotations.patch
+0009-debian-qcom-x1e-disable-stubble.patch

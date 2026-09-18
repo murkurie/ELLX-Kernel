@@ -151,6 +151,7 @@ jobs:
           aarch64-linux-gnu-gcc-15 --version
 
           sed -i 's/gcc:=gcc-15/gcc:=gcc/' debian/rules.d/0-common-vars.mk || true
+          sed -i 's/do_stubble\s*=\s*true/do_stubble = false/' debian.qcom-x1e/rules.d/arm64.mk || true
           chmod +x debian/rules
           fakeroot ./debian/rules clean
 
@@ -158,7 +159,7 @@ jobs:
         working-directory: kernel
         run: |
           export DEB_BUILD_OPTIONS="parallel=$(nproc)"
-          fakeroot ./debian/rules binary-headers binary-qcom-x1e do_skip_checks=true
+          fakeroot ./debian/rules binary-headers binary-qcom-x1e do_skip_checks=true do_stubble=false
 
       - name: Inspect generated Debian packages
         run: |
@@ -168,6 +169,7 @@ jobs:
           cp -v kernel/*.deb artifacts/ 2>/dev/null || true
           cp -v *.changes artifacts/ 2>/dev/null || true
           cp -v *.buildinfo artifacts/ 2>/dev/null || true
+          find kernel/debian/build/ -name "x1e80100-microsoft-romulus*.dtb" -exec cp -v {} artifacts/ \; 2>/dev/null || true
           ls -lh artifacts/
 
       - name: Upload Debian packages as build artifact

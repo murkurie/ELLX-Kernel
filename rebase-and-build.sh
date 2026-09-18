@@ -69,11 +69,12 @@ fi
 
 echo "=== 6. Updating Ubuntu Kernel Packaging Configurations ==="
 if [ -f "debian/rules" ]; then
+    sed -i 's/do_stubble\s*=\s*true/do_stubble = false/' debian.qcom-x1e/rules.d/arm64.mk || true
     chmod +x debian/rules
     fakeroot ./debian/rules clean || true
     ./debian/rules updateconfigs || true
-    git add debian.qcom-x1e/config/annotations debian.qcom-x1e/config/arm64/*.config || true
-    git commit -m "debian.qcom-x1e: sync annotations with updateconfigs for 7.2" || true
+    git add debian.qcom-x1e/config/annotations debian.qcom-x1e/config/arm64/*.config debian.qcom-x1e/rules.d/arm64.mk || true
+    git commit -m "debian.qcom-x1e: sync annotations and disable stubble for 7.2" || true
 fi
 
 echo "=============================================================================="
@@ -84,5 +85,5 @@ echo " 2. The native ARM64 runner on GitHub Actions will automatically compile"
 echo "    the kernel and produce downloadable .deb packages."
 echo " 3. Or build locally with:"
 echo "    export DEB_BUILD_OPTIONS=\"parallel=\$(nproc)\""
-echo "    fakeroot ./debian/rules binary-qcom-x1e"
+echo "    fakeroot ./debian/rules binary-headers binary-qcom-x1e do_skip_checks=true do_stubble=false"
 echo "=============================================================================="

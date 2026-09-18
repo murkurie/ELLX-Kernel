@@ -10,7 +10,7 @@ Write-Host "============================================================" -Foreg
 git remote set-url origin "https://github.com/$Username/$RepoName.git"
 
 Write-Host "`nPushing branch '7.2-sl7-13.8' and tag 'v7.2.0-sl7-13.8' to your GitHub fork..." -ForegroundColor Yellow
-git push -u origin 7.2-sl7-13.8 --tags
+git push -u origin 7.2-sl7-13.8 --tags --force
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "`n[SUCCESS] Pushed to https://github.com/$Username/$RepoName!" -ForegroundColor Green

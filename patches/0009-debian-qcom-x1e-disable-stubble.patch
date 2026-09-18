@@ -1,0 +1,25 @@
+From: ProgrammerIn-wonderland <alice@alicesworld.tech>
+Subject: [PATCH 9/9] debian.qcom-x1e: Disable stubble UKI packaging
+
+Surface Laptop 7 boots via standard EFI/GRUB and does not use Canonical's
+experimental stubble EFI loader. Disabling stubble avoids calling ukify
+with unrecognized --hwids arguments and installs standard vmlinuz into
+the linux-image package.
+
+Signed-off-by: ProgrammerIn-wonderland <alice@alicesworld.tech>
+---
+ debian.qcom-x1e/rules.d/arm64.mk | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/debian.qcom-x1e/rules.d/arm64.mk b/debian.qcom-x1e/rules.d/arm64.mk
+--- a/debian.qcom-x1e/rules.d/arm64.mk
++++ b/debian.qcom-x1e/rules.d/arm64.mk
+@@ -17,6 +17,6 @@ do_tools_rtla = true
+ 
+ do_dtbs		= true
+-do_stubble	= true
++do_stubble	= false
+ do_skip_checks	= false
+ do_zfs		= true
+-- 
+2.45.0

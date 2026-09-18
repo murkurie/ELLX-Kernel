@@ -31,10 +31,10 @@ jobs:
     timeout-minutes: 360
 
     steps:
-      - name: Check out kernel source
+      - name: Check out patch repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          path: ellx-patches
 
       - name: Show runner environment details
         run: |
@@ -71,6 +71,7 @@ jobs:
             debhelper \
             default-jdk-headless \
             dkms \
+            dwarves \
             fakeroot \
             flex \
             gawk \
@@ -113,33 +114,62 @@ jobs:
             uuid-dev \
             zstd
 
+      - name: Clone upstream linux-qcom-x1e (7.2 resolute)
+        run: |
+          echo "=== Cloning latest linux-qcom-x1e tree ==="
+          git clone --depth 1 --branch x1e80100-book4e-7.2-14-tmp https://github.com/zensanp/linux-book4-edge.git kernel
+          cd kernel
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Apply Surface Laptop 7 patch series
+        working-directory: kernel
+        run: |
+          PATCH_DIR="${{ github.workspace }}/ellx-patches/patches"
+          echo "=== Applying Surface Linux patches from ${PATCH_DIR} ==="
+          while IFS= read -r patch || [ -n "$patch" ]; do
+            [[ "$patch" =~ ^#.*$ ]] && continue
+            [[ -z "$patch" ]] && continue
+
+            echo "--> Applying ${patch}..."
+            git apply --verbose --whitespace=nowarn "${PATCH_DIR}/${patch}"
+            git add -A
+            git commit -m "Apply ${patch}"
+          done < "${PATCH_DIR}/series"
+          echo "All patches applied successfully."
+
       - name: Prepare Ubuntu packaging metadata and config
+        working-directory: kernel
         run: |
           export DEB_BUILD_OPTIONS="parallel=$(nproc)"
           chmod +x debian/rules
           fakeroot ./debian/rules clean
           ./debian/rules updateconfigs
+          git add debian.qcom-x1e/config/annotations debian.qcom-x1e/config/arm64/*.config || true
+          git commit -m "debian.qcom-x1e: sync annotations with updateconfigs for 7.2" || true
 
       - name: Compile and package Linux qcom-x1e (.deb)
+        working-directory: kernel
         run: |
           export DEB_BUILD_OPTIONS="parallel=$(nproc)"
           fakeroot ./debian/rules binary-qcom-x1e
 
       - name: Inspect generated Debian packages
         run: |
-          echo "=== Generated Packages ==="
-          ls -lh ../*.deb
-          ls -lh ../*.changes || true
+          echo "=== Inspecting Generated Packages ==="
+          mkdir -p artifacts
+          cp -v *.deb artifacts/ 2>/dev/null || true
+          cp -v kernel/*.deb artifacts/ 2>/dev/null || true
+          cp -v *.changes artifacts/ 2>/dev/null || true
+          cp -v *.buildinfo artifacts/ 2>/dev/null || true
+          ls -lh artifacts/
 
       - name: Upload Debian packages as build artifact
         uses: actions/upload-artifact@v4
         with:
           name: surface-laptop-7-kernel-packages-arm64
           if-no-files-found: error
-          path: |
-            ../*.deb
-            ../*.changes
-            ../*.buildinfo
+          path: artifacts/*
 
       - name: Create GitHub Release on Tag or Dispatch
         if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.create_release)
@@ -150,7 +180,7 @@ jobs:
           body: |
             ## Surface Laptop 7 (Snapdragon X Elite) Ubuntu Kernel Release
             
-            Custom kernel rebased on the latest `linux-qcom-x1e` tree with full hardware enablement for the **Surface Laptop 7 (13.8")**:
+            Custom kernel rebased on the latest `linux-qcom-x1e` tree (Linux 7.2) with full hardware enablement for the **Surface Laptop 7 (13.8")**:
             - **Touchpad**: HIDSPI v3 over QSPI (`spi-hid`, GPI DMA protocol 9, GENI SPI 1-4-4).
             - **Webcam**: Native sensor crop and frame configuration (`ov02c10`).
             - **Display**: Retimer idle power-management (`ps883x`).
@@ -163,5 +193,4 @@ jobs:
             sudo update-grub
             sudo reboot
             ```
-          files: |
-            ../*.deb
+          files: artifacts/*

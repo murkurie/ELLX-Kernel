@@ -33,7 +33,6 @@ ELLX-Kernel-Update/
 │   ├── 0006-ov02c10-camera-sensor.patch
 │   ├── 0007-surface-laptop-7-romulus-dt.patch
 │   ├── 0008-debian-qcom-x1e-config-annotations.patch
-│   ├── 0009-debian-qcom-x1e-disable-stubble.patch
 │   └── series                        # Quilt / git-am patch order
 ├── rebase-and-build.sh               # One-click automated rebase and build script
 └── README.md                         # This guide
@@ -78,7 +77,7 @@ chmod +x rebase-and-build.sh
 The script will:
 1. Fetch the latest `linux-qcom-x1e` 7.2 base branch (`7.2.0-jg-1`).
 2. Create and switch to branch `7.2-sl7-13.8`.
-3. Sequentially apply all 9 modular Surface Laptop 7 patches with `git am`.
+3. Sequentially apply all 8 modular Surface Laptop 7 patches with `git am`.
 4. Ensure the 13.8" device tree (`x1e80100-microsoft-romulus13.dts`) is configured.
 5. Run `./debian/rules updateconfigs` to validate packaging annotations.
 

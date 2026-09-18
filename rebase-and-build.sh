@@ -69,7 +69,8 @@ fi
 
 echo "=== 6. Updating Ubuntu Kernel Packaging Configurations ==="
 if [ -f "debian/rules" ]; then
-    sed -i 's/do_stubble\s*=\s*true/do_stubble = false/' debian.qcom-x1e/rules.d/arm64.mk || true
+    sed -i 's/do_stubble.*=.*true/do_stubble = false/' debian.qcom-x1e/rules.d/arm64.mk || true
+    sed -i 's/do_stubble.*=.*true/do_stubble = false/' debian/rules.d/0-common-vars.mk || true
     chmod +x debian/rules
     fakeroot ./debian/rules clean || true
     ./debian/rules updateconfigs || true

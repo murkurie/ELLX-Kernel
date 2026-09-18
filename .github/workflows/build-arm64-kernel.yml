@@ -151,7 +151,8 @@ jobs:
           aarch64-linux-gnu-gcc-15 --version
 
           sed -i 's/gcc:=gcc-15/gcc:=gcc/' debian/rules.d/0-common-vars.mk || true
-          sed -i 's/do_stubble\s*=\s*true/do_stubble = false/' debian.qcom-x1e/rules.d/arm64.mk || true
+          sed -i 's/do_stubble.*=.*true/do_stubble = false/' debian.qcom-x1e/rules.d/arm64.mk || true
+          sed -i 's/do_stubble.*=.*true/do_stubble = false/' debian/rules.d/0-common-vars.mk || true
           chmod +x debian/rules
           fakeroot ./debian/rules clean
 
